@@ -8,6 +8,9 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
 
+import java.io.File;
+import java.util.Scanner;
+
 public class App {
     public static void main(String[] args) {
         Options options = new Options();
@@ -20,19 +23,26 @@ public class App {
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = null;
+        boolean batch = false;
         try {
             cmd = parser.parse(options, args);
+            String batchFile = "";
 
             if (cmd.hasOption('b') || cmd.hasOption("batch")) {
+                batch = true;
                 if (cmd.getOptionValue('b') != null) {
                     System.out.println("Batch value: " + cmd.getOptionValue('b'));
+                    batchFile = cmd.getOptionValue('b');
                 }
                 else {
                     System.out.println("Batch value: " + cmd.getOptionValue("batch"));
+                    batchFile = cmd.getOptionValue("batch");
                 }
-            }
-            else if (cmd.hasOption('h') || cmd.hasOption("help")) {
-                System.out.println("");
+                File bFile = new File(System.getProperty("user.dir").substring(0, System.getProperty("user.dir").length() - 3) + batchFile);
+                if (!bFile.isFile()) {
+                    System.out.println("Provide an actual file");
+                    System.exit(1);
+                }
             }
             else if (cmd.hasOption('o') || cmd.hasOption("output")) {
                 if (cmd.getOptionValue('o') != null) {
@@ -42,9 +52,30 @@ public class App {
                     System.out.println("Output value: " + cmd.getOptionValue("output"));
                 }
             }
+            else if (cmd.hasOption('h') || cmd.hasOption("help")) {
+                System.out.println("");
+            }
         }
         catch (Exception error){
             System.out.println("ERROR: " + error);
         }
+
+        Eval eval = new Eval();
+        Scanner scanner = new Scanner(System.in);
+        boolean running = true;
+        String input = "";
+        if (!batch) {
+            while (running) {
+                System.out.println("$ ");
+                input = scanner.nextLine();
+                if (input.equals("exit")) {
+                    System.exit(0);
+                }
+                else {
+                    System.out.println("\n-> " + eval.evaluate(input));
+                }
+            }
+        }
     }
 }
+
