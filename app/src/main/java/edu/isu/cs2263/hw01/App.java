@@ -8,7 +8,7 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
 
-import java.io.File;
+import java.io.*;
 import java.util.Scanner;
 
 public class App {
@@ -24,9 +24,12 @@ public class App {
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = null;
         boolean batch = false;
+        boolean output = false;
+        String batchFile = "";
+        String outputFile = "";
+
         try {
             cmd = parser.parse(options, args);
-            String batchFile = "";
 
             if (cmd.hasOption('b') || cmd.hasOption("batch")) {
                 batch = true;
@@ -45,11 +48,13 @@ public class App {
                 }
             }
             else if (cmd.hasOption('o') || cmd.hasOption("output")) {
+                output = true;
                 if (cmd.getOptionValue('o') != null) {
                     System.out.println("Batch value: " + cmd.getOptionValue('o'));
                 }
                 else {
                     System.out.println("Output value: " + cmd.getOptionValue("output"));
+                    outputFile = cmd.getOptionValue("output");
                 }
             }
             else if (cmd.hasOption('h') || cmd.hasOption("help")) {
@@ -61,21 +66,65 @@ public class App {
         }
 
         Eval eval = new Eval();
-        Scanner scanner = new Scanner(System.in);
-        boolean running = true;
-        String input = "";
-        if (!batch) {
-            while (running) {
-                System.out.println("$ ");
-                input = scanner.nextLine();
-                if (input.equals("exit")) {
-                    System.exit(0);
+
+        if (batch) {
+            try {
+                File bFile = new File(System.getProperty("user.dir").substring(0, System.getProperty("user.dir").length() - 3) + batchFile);
+                FileReader fileReader = new FileReader(bFile);
+                BufferedReader br=new BufferedReader(fileReader);
+                String line;
+                while((line=br.readLine())!=null) {
+                    eval.evaluate(line);
                 }
-                else {
-                    System.out.println("\n-> " + eval.evaluate(input));
+                fileReader.close();    //closes the stream and release the resources
+            }
+            catch (Exception error){
+                System.out.println(error);
+            }
+        }
+        else {
+            Scanner scanner = new Scanner(System.in);
+            boolean running = true;
+            String input = "";
+
+            if (output) {
+                try {
+                    PrintStream out = new PrintStream(new FileOutputStream(System.getProperty("user.dir").substring(0, System.getProperty("user.dir").length() - 3) + outputFile));
+                    System.setOut(out);
+
+                    while (running) {
+                        System.out.println("> ");
+                        input = scanner.nextLine();
+                        if (input.equals("exit")) {
+                            System.exit(0);
+                        }
+                        else {
+                            System.out.println(input);
+                            System.out.println("\n-> " + eval.evaluate(input));
+                        }
+                    }
+                }
+                catch (Exception err) {
+                    System.out.println("ERROR: " + err);
                 }
             }
+            else {
+                try {
+                    while (running) {
+                        System.out.println("> ");
+                        input = scanner.nextLine();
+                        if (input.equals("exit")) {
+                            System.exit(0);
+                        }
+                        else {
+                            System.out.println("\n-> " + eval.evaluate(input));
+                        }
+                    }
+                }
+                catch (Exception err) {
+                }
+            }
+
         }
     }
 }
-
